@@ -135,6 +135,15 @@ describe('TelegramExporter', () => {
     expect(result.error).toBe('HTTP 401');
   });
 
+  it('does not retry a 4xx response', async () => {
+    mockFetch.mockResolvedValue({ ok: false, status: 401 });
+    const exporter = new TelegramExporter(defaultConfig);
+    await exporter.export(samplePayload);
+
+    // A bad bot token / chat ID cannot succeed on retry — fail fast.
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
   it('retries on failure (3 total attempts)', async () => {
     mockFetch.mockRejectedValue(new Error('timeout'));
     const exporter = new TelegramExporter(defaultConfig);

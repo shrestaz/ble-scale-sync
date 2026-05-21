@@ -279,6 +279,33 @@ describe('createExporterFromEntry()', () => {
     expect(() => createExporterFromEntry(entry)).toThrow('mqtt');
   });
 
+  it('throws a clear error when a required field is missing', () => {
+    const entry: ExporterEntry = { type: 'telegram', chat_id: '987654321' };
+    expect(() => createExporterFromEntry(entry)).toThrow(
+      'Exporter "telegram" is missing required field "bot_token"',
+    );
+  });
+
+  it('throws a clear error for an intervals entry missing api_key', () => {
+    const entry: ExporterEntry = { type: 'intervals', athlete_id: 'i123456' };
+    expect(() => createExporterFromEntry(entry)).toThrow(
+      'Exporter "intervals" is missing required field "api_key"',
+    );
+  });
+
+  it('rejects an empty-string required field', () => {
+    const entry: ExporterEntry = { type: 'webhook', url: '' };
+    expect(() => createExporterFromEntry(entry)).toThrow(
+      'Exporter "webhook" is missing required field "url"',
+    );
+  });
+
+  it('does not require runtime-optional garmin fields', () => {
+    // garmin email/password are wizard-required but optional at runtime
+    // (cached tokens), so a bare garmin entry must still construct.
+    expect(() => createExporterFromEntry({ type: 'garmin' })).not.toThrow();
+  });
+
   it('applies defaults for optional MQTT fields', () => {
     const entry: ExporterEntry = {
       type: 'mqtt',

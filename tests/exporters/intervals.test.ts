@@ -103,6 +103,15 @@ describe('IntervalsExporter', () => {
     expect(result.error).toBe('HTTP 403');
   });
 
+  it('does not retry a 4xx response', async () => {
+    mockFetch.mockResolvedValue({ ok: false, status: 403 });
+    const exporter = new IntervalsExporter(defaultConfig);
+    await exporter.export(samplePayload);
+
+    // Bad API key / athlete ID cannot succeed on retry — fail fast.
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
   it('retries on failure (3 total attempts)', async () => {
     mockFetch.mockRejectedValue(new Error('timeout'));
     const exporter = new IntervalsExporter(defaultConfig);

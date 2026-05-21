@@ -166,12 +166,13 @@ download_firmware() {
     green "Downloaded: $FIRMWARE_FILE"
   fi
 
-  # Real MicroPython binaries are >1.5 MB; anything smaller is a 404 HTML
-  # page or other download error.  Flashing it would brick boot, so fail loud.
+  # Real MicroPython firmware binaries are well over 1 MB; anything smaller is
+  # a 404 HTML page or a truncated/failed download.  Flashing it would brick
+  # boot, so fail loud.
   local size
   size=$(stat -c%s "$FIRMWARE_FILE" 2>/dev/null || stat -f%z "$FIRMWARE_FILE")
-  if [[ "$size" -lt 102400 ]]; then
-    die $'Firmware file \''"$FIRMWARE_FILE"$'\' is only '"$size"$' bytes — not a real binary (probably a 404 HTML page).\nDelete it and check the URL is reachable:\n  rm '"$FIRMWARE_FILE"$'\n  curl -IL '"$FIRMWARE_URL"
+  if [[ "$size" -lt 1048576 ]]; then
+    die $'Firmware file \''"$FIRMWARE_FILE"$'\' is only '"$size"$' bytes — not a complete firmware binary (truncated download or a 404 HTML error page).\nDelete it and check the URL is reachable:\n  rm '"$FIRMWARE_FILE"$'\n  curl -IL '"$FIRMWARE_URL"
   fi
 }
 

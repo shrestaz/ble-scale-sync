@@ -28,6 +28,21 @@ interface ExporterRegistryEntry {
   factory: (config: Record<string, unknown>) => Exporter;
 }
 
+/**
+ * Read a required config field, throwing a clear error when it is missing or
+ * empty. Surfaces hand-written `config.yaml` mistakes instead of letting an
+ * `undefined` propagate into a confusing downstream failure.
+ */
+function requireField(config: Record<string, unknown>, type: string, key: string): string {
+  const value = config[key];
+  if (value === undefined || value === null || value === '') {
+    throw new Error(
+      `Exporter "${type}" is missing required field "${key}". Check your config.yaml.`,
+    );
+  }
+  return String(value);
+}
+
 // --- Registry ---
 
 export const EXPORTER_REGISTRY: ExporterRegistryEntry[] = [
@@ -44,7 +59,7 @@ export const EXPORTER_REGISTRY: ExporterRegistryEntry[] = [
     schema: mqttSchema,
     factory: (config) => {
       const mqttConfig: MqttConfig = {
-        brokerUrl: config.broker_url as string,
+        brokerUrl: requireField(config, 'mqtt', 'broker_url'),
         topic: (config.topic as string) ?? 'scale/body-composition',
         qos: (config.qos as 0 | 1 | 2) ?? 1,
         retain: (config.retain as boolean) ?? true,
@@ -61,7 +76,7 @@ export const EXPORTER_REGISTRY: ExporterRegistryEntry[] = [
     schema: webhookSchema,
     factory: (config) => {
       const webhookConfig: WebhookConfig = {
-        url: config.url as string,
+        url: requireField(config, 'webhook', 'url'),
         method: (config.method as string) ?? 'POST',
         headers: (config.headers as Record<string, string>) ?? {},
         timeout: (config.timeout as number) ?? 10_000,
@@ -73,10 +88,10 @@ export const EXPORTER_REGISTRY: ExporterRegistryEntry[] = [
     schema: influxdbSchema,
     factory: (config) => {
       const influxConfig: InfluxDbConfig = {
-        url: config.url as string,
-        token: config.token as string,
-        org: config.org as string,
-        bucket: config.bucket as string,
+        url: requireField(config, 'influxdb', 'url'),
+        token: requireField(config, 'influxdb', 'token'),
+        org: requireField(config, 'influxdb', 'org'),
+        bucket: requireField(config, 'influxdb', 'bucket'),
         measurement: (config.measurement as string) ?? 'body_composition',
       };
       return new InfluxDbExporter(influxConfig);
@@ -87,7 +102,7 @@ export const EXPORTER_REGISTRY: ExporterRegistryEntry[] = [
     factory: (config) => {
       const ntfyConfig: NtfyConfig = {
         url: (config.url as string) ?? 'https://ntfy.sh',
-        topic: config.topic as string,
+        topic: requireField(config, 'ntfy', 'topic'),
         title: (config.title as string) ?? 'Scale Measurement',
         priority: (config.priority as number) ?? 3,
         token: config.token as string | undefined,
@@ -101,7 +116,7 @@ export const EXPORTER_REGISTRY: ExporterRegistryEntry[] = [
     schema: fileSchema,
     factory: (config) => {
       const fileConfig: FileConfig = {
-        filePath: config.file_path as string,
+        filePath: requireField(config, 'file', 'file_path'),
         format: (config.format as 'csv' | 'jsonl') ?? 'csv',
       };
       return new FileExporter(fileConfig);
@@ -111,8 +126,8 @@ export const EXPORTER_REGISTRY: ExporterRegistryEntry[] = [
     schema: stravaSchema,
     factory: (config) => {
       const stravaConfig: StravaConfig = {
-        clientId: config.client_id as string,
-        clientSecret: config.client_secret as string,
+        clientId: requireField(config, 'strava', 'client_id'),
+        clientSecret: requireField(config, 'strava', 'client_secret'),
         tokenDir: (config.token_dir as string) ?? './strava-tokens',
       };
       return new StravaExporter(stravaConfig);
@@ -122,8 +137,8 @@ export const EXPORTER_REGISTRY: ExporterRegistryEntry[] = [
     schema: telegramSchema,
     factory: (config) => {
       const telegramConfig: TelegramConfig = {
-        botToken: config.bot_token as string,
-        chatId: String(config.chat_id),
+        botToken: requireField(config, 'telegram', 'bot_token'),
+        chatId: requireField(config, 'telegram', 'chat_id'),
         title: (config.title as string) ?? 'Scale Measurement',
         silent: (config.silent as boolean) ?? false,
       };
@@ -134,8 +149,8 @@ export const EXPORTER_REGISTRY: ExporterRegistryEntry[] = [
     schema: intervalsSchema,
     factory: (config) => {
       const intervalsConfig: IntervalsConfig = {
-        athleteId: String(config.athlete_id),
-        apiKey: config.api_key as string,
+        athleteId: requireField(config, 'intervals', 'athlete_id'),
+        apiKey: requireField(config, 'intervals', 'api_key'),
       };
       return new IntervalsExporter(intervalsConfig);
     },
