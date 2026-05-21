@@ -416,4 +416,35 @@ describe('loadExporterConfig()', () => {
       expect(cfg.telegram).toBeUndefined();
     });
   });
+
+  describe('Intervals.icu config', () => {
+    it('requires INTERVALS_ATHLETE_ID when intervals is enabled', () => {
+      vi.stubEnv('EXPORTERS', 'intervals');
+      expect(() => loadExporterConfig()).toThrow(/INTERVALS_ATHLETE_ID is required/);
+    });
+
+    it('requires INTERVALS_API_KEY when intervals is enabled', () => {
+      vi.stubEnv('EXPORTERS', 'intervals');
+      vi.stubEnv('INTERVALS_ATHLETE_ID', 'i123456');
+      expect(() => loadExporterConfig()).toThrow(/INTERVALS_API_KEY is required/);
+    });
+
+    it('parses intervals env vars', () => {
+      vi.stubEnv('EXPORTERS', 'intervals');
+      vi.stubEnv('INTERVALS_ATHLETE_ID', 'i123456');
+      vi.stubEnv('INTERVALS_API_KEY', 'abcdef123');
+      const cfg = loadExporterConfig();
+      expect(cfg.intervals).toEqual({
+        athleteId: 'i123456',
+        apiKey: 'abcdef123',
+      });
+    });
+
+    it('does not parse intervals config when intervals is not enabled', () => {
+      vi.stubEnv('EXPORTERS', 'garmin');
+      vi.stubEnv('INTERVALS_ATHLETE_ID', 'i123456');
+      const cfg = loadExporterConfig();
+      expect(cfg.intervals).toBeUndefined();
+    });
+  });
 });

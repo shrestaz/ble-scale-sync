@@ -71,6 +71,9 @@ users:
     #     client_id: "${STRAVA_CLIENT_ID}"
     #     client_secret: "${STRAVA_CLIENT_SECRET}"
     #     token_dir: ./strava-tokens/alice   # run "npm run setup-strava" after config
+    #   - type: intervals
+    #     athlete_id: i123456                # Intervals.icu Settings → Developer
+    #     api_key: "${INTERVALS_API_KEY}"
 
   - name: Bob
     slug: bob

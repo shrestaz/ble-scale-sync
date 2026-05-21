@@ -10,7 +10,8 @@ export type ExporterName =
   | 'ntfy'
   | 'file'
   | 'strava'
-  | 'telegram';
+  | 'telegram'
+  | 'intervals';
 
 const KNOWN_EXPORTERS = new Set<ExporterName>([
   'garmin',
@@ -21,6 +22,7 @@ const KNOWN_EXPORTERS = new Set<ExporterName>([
   'file',
   'strava',
   'telegram',
+  'intervals',
 ]);
 
 export interface MqttConfig {
@@ -78,6 +80,11 @@ export interface TelegramConfig {
   silent: boolean;
 }
 
+export interface IntervalsConfig {
+  athleteId: string;
+  apiKey: string;
+}
+
 export interface ExporterConfig {
   exporters: ExporterName[];
   mqtt?: MqttConfig;
@@ -87,6 +94,7 @@ export interface ExporterConfig {
   file?: FileConfig;
   strava?: StravaConfig;
   telegram?: TelegramConfig;
+  intervals?: IntervalsConfig;
 }
 
 function fail(msg: string): never {
@@ -280,5 +288,18 @@ export function loadExporterConfig(): ExporterConfig {
     };
   }
 
-  return { exporters, mqtt, webhook, influxdb, ntfy, file, strava, telegram };
+  let intervals: IntervalsConfig | undefined;
+  if (exporters.includes('intervals')) {
+    const athleteId = process.env.INTERVALS_ATHLETE_ID?.trim();
+    if (!athleteId) {
+      fail('INTERVALS_ATHLETE_ID is required when intervals exporter is enabled.');
+    }
+    const apiKey = process.env.INTERVALS_API_KEY?.trim();
+    if (!apiKey) {
+      fail('INTERVALS_API_KEY is required when intervals exporter is enabled.');
+    }
+    intervals = { athleteId, apiKey };
+  }
+
+  return { exporters, mqtt, webhook, influxdb, ntfy, file, strava, telegram, intervals };
 }

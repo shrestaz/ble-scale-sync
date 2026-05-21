@@ -73,6 +73,13 @@ export function loadEnvConfig(): AppConfig {
         silent: t.silent,
       });
     }
+    if (name === 'intervals' && exporterConfig.intervals) {
+      const i = exporterConfig.intervals;
+      Object.assign(entry, {
+        athlete_id: i.athleteId,
+        api_key: i.apiKey,
+      });
+    }
 
     return entry as ExporterEntry;
   });

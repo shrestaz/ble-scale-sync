@@ -9,6 +9,7 @@ import type {
   FileConfig,
   StravaConfig,
   TelegramConfig,
+  IntervalsConfig,
 } from './config.js';
 import { garminSchema, GarminExporter } from './garmin.js';
 import { mqttSchema, MqttExporter } from './mqtt.js';
@@ -18,6 +19,7 @@ import { ntfySchema, NtfyExporter } from './ntfy.js';
 import { fileSchema, FileExporter } from './file.js';
 import { stravaSchema, StravaExporter } from './strava.js';
 import { telegramSchema, TelegramExporter } from './telegram.js';
+import { intervalsSchema, IntervalsExporter } from './intervals.js';
 
 // --- Registry entry type ---
 
@@ -126,6 +128,16 @@ export const EXPORTER_REGISTRY: ExporterRegistryEntry[] = [
         silent: (config.silent as boolean) ?? false,
       };
       return new TelegramExporter(telegramConfig);
+    },
+  },
+  {
+    schema: intervalsSchema,
+    factory: (config) => {
+      const intervalsConfig: IntervalsConfig = {
+        athleteId: String(config.athlete_id),
+        apiKey: config.api_key as string,
+      };
+      return new IntervalsExporter(intervalsConfig);
     },
   },
 ];
