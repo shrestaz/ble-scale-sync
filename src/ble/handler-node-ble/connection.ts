@@ -1,6 +1,16 @@
+import { EventEmitter } from 'events';
 import NodeBle from 'node-ble';
 import { bleLog, errMsg } from '../types.js';
 import type { Adapter } from './dbus.js';
+
+// node-ble attaches a PropertiesChanged listener to every BLE device proxy it
+// creates during discovery. In a busy BLE environment (20+ nearby devices),
+// after several scan cycles the default Node.js limit of 10 listeners per
+// EventEmitter is exceeded, triggering warnings and congesting the event loop.
+// Setting defaultMaxListeners = 0 disables the limit (0 = unlimited) so the
+// warning never fires. The connection is reset after every idle scan cycle
+// (see scan.ts) to keep actual accumulation bounded.
+EventEmitter.defaultMaxListeners = 0;
 
 /**
  * Persistent D-Bus connection + adapter, reused across scan cycles in
