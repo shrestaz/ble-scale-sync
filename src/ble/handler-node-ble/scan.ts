@@ -382,10 +382,25 @@ export async function scanAndReadRaw(opts: ScanOptions): Promise<RawReading> {
       if (await resetAdapterBtmgmt(parseHciIndex(bleAdapter))) {
         bleLog.debug('Preemptive btmgmt reset after GATT');
       }
+    } else {
+      // Idle cycles (no GATT attempted): reset the D-Bus connection to flush
+      // accumulated node-ble BusHelper PropertiesChanged listeners.
+      //
+      // Root cause: autoDiscover() calls btAdapter.getDevice(addr) for every BLE
+      // device in range. node-ble creates a new BusHelper per call, and each
+      // BusHelper attaches a PropertiesChanged listener to the shared dbus-next
+      // MessageBus. With 20+ BLE devices in range and one reset per scan cycle
+      // (120s), after ~9 cycles the MessageBus has 180+ listeners — all firing
+      // on every advertisement — congesting the event loop enough to cause GATT
+      // timeouts the next time the scale is actually found.
+      //
+      // We destroy the full connection (rather than calling stopDiscovery) to
+      // avoid the BlueZ Discovering desync described above (bluez/bluez#807):
+      // a fresh client reconnect sidesteps the stop/start cycle on the same
+      // session that triggers the controller-state mismatch.
+      resetConnection();
+      bleLog.debug('D-Bus connection reset after idle cycle (flushed accumulated listeners)');
     }
-    // For idle cycles (no GATT connection), discovery is kept running.
-    // Stopping and restarting discovery on every idle cycle triggers a BlueZ
-    // bug where the Discovering property desyncs from the controller state.
   }
 }
 
