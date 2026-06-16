@@ -1,5 +1,5 @@
-# Pin to release version tag at release time (e.g. :1.8.0)
+# Using fork build with BLE shutdown + listener-leak fixes
 build_from:
-  amd64: ghcr.io/kristianp26/ble-scale-sync:latest
-  aarch64: ghcr.io/kristianp26/ble-scale-sync:latest
-  armv7: ghcr.io/kristianp26/ble-scale-sync:latest
+  amd64: ghcr.io/shrestaz/ble-scale-sync:dev
+  aarch64: ghcr.io/shrestaz/ble-scale-sync:dev
+  armv7: ghcr.io/shrestaz/ble-scale-sync:dev
