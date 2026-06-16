@@ -1,0 +1,5 @@
+FROM ghcr.io/kristianp26/ble-scale-sync:latest
+USER root
+COPY . /app/dist/
+RUN chown -R node:node /app/dist
+USER node

@@ -118,6 +118,41 @@ Requires Node.js v22+ and a BLE adapter. See the **[full install guide](https://
 
 See **[CONTRIBUTING.md](CONTRIBUTING.md)** for development setup, project structure, and how to add new scale adapters or exporters.
 
+## Fork patches (shrestaz/ble-scale-sync)
+
+This fork carries three bug fixes not yet merged upstream. The deployed image is `ghcr.io/shrestaz/ble-scale-sync:dev`.
+
+### Fix 1 — BLE listener leak (`48b28ae`)
+**Problem:** `autoDiscover()` calls `btAdapter.getDevice(addr)` for every visible BLE device. node-ble creates a new `BusHelper` per call, and each registers a `PropertiesChanged` listener on the shared dbus-next `MessageBus._signals` EventEmitter. Listeners accumulate across scan cycles because the D-Bus connection is reused. After ~10 idle cycles with 20+ nearby devices, the EventEmitter has hundreds of listeners firing on every advertisement, congesting the event loop enough to cause GATT timeouts when the scale is finally seen.
+
+**Fix:** Call `resetConnection()` after every idle scan cycle. This destroys the `MessageBus` and its `_signals` EventEmitter; the next cycle starts with a clean connection.
+
+### Fix 2 — MaxListeners warning spam (`f8125e5`)
+**Problem:** The listener accumulation above triggers `MaxListenersExceededWarning` once the count exceeds Node's default limit of 10.
+
+**Fix:** Set `EventEmitter.defaultMaxListeners = 0` (unlimited) at module init in `handler-node-ble/connection.ts`. Fix 1 keeps actual accumulation bounded; this suppresses the warning.
+
+### Fix 3 — Shutdown hang (`6ca14ba`)
+**Problem:** On SIGTERM, `device.disconnect()` awaits a D-Bus reply that never arrives when BlueZ is wedged. This blocks the `finally` cleanup path, keeping the D-Bus socket ref'd and pinning the event loop until the 5 s hard-exit timer force-exits the process.
+
+**Fix:** Both `device.disconnect()` call sites in `scanAndReadRaw` now race against an unref'd 2 s timeout. `resetConnection()` also calls `stream.unref()` on the underlying `net.Socket` after `destroy()`, so the socket no longer pins the event loop if bluetoothd never sends its FIN.
+
+### Rebuilding the image after changes
+
+```bash
+# 1. Compile TypeScript
+node_modules/.bin/tsc -p tsconfig.json
+
+# 2. Build image (layers fixed dist/ on top of upstream)
+cp -r dist /tmp/ble-dist
+docker build -f Dockerfile.local -t ghcr.io/shrestaz/ble-scale-sync:dev /tmp/ble-dist/
+
+# 3. Push
+docker push ghcr.io/shrestaz/ble-scale-sync:dev
+```
+
+Then rebuild the HA addon: **Settings → Add-ons → BLE Scale Sync → Rebuild**.
+
 ## License
 
 GPL-3.0. See [LICENSE](LICENSE) for details.
