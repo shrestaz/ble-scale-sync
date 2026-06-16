@@ -47,7 +47,18 @@ export function resetConnection(): void {
   persistentAdapter = null;
   if (persistentConn) {
     try {
+      // Access the underlying socket before calling destroy() so we can unref
+      // it afterward. node-ble's destroy() calls dbus.disconnect() which only
+      // calls stream.end() — a half-close that waits for bluetoothd to send
+      // its own FIN. When bluetoothd is wedged that FIN never arrives, leaving
+      // the socket ref'd and keeping the event loop alive past the shutdown
+      // grace window. Unreffing it lets the process exit naturally once all
+      // other handles have drained.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const stream = (persistentConn as any).bluetooth?.dbus?._connection
+        ?.stream as { unref?: () => void } | undefined;
       persistentConn.destroy();
+      stream?.unref?.();
     } catch {
       /* ignore */
     }
