@@ -55,8 +55,9 @@ export function resetConnection(): void {
       // grace window. Unreffing it lets the process exit naturally once all
       // other handles have drained.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const stream = (persistentConn as any).bluetooth?.dbus?._connection
-        ?.stream as { unref?: () => void } | undefined;
+      const stream = (persistentConn as any).bluetooth?.dbus?._connection?.stream as
+        | { unref?: () => void }
+        | undefined;
       persistentConn.destroy();
       stream?.unref?.();
     } catch {

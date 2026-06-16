@@ -321,7 +321,7 @@ export async function scanAndReadRaw(opts: ScanOptions): Promise<RawReading> {
       // 2 s timeout: if BlueZ is wedged, device.disconnect() awaits a D-Bus
       // reply that never arrives. The timeout lets us proceed to resetConnection()
       // so the socket can be cleaned up before the hard-exit grace window expires.
-      const disconnectTimeout = new Promise<void>(resolve => setTimeout(resolve, 2_000).unref());
+      const disconnectTimeout = new Promise<void>((resolve) => setTimeout(resolve, 2_000).unref());
       await Promise.race([device.disconnect(), disconnectTimeout]);
     } catch {
       /* ignore */
@@ -344,7 +344,9 @@ export async function scanAndReadRaw(opts: ScanOptions): Promise<RawReading> {
     // Best-effort disconnect if we got partway through a connection
     if (device) {
       try {
-        const disconnectTimeout = new Promise<void>(resolve => setTimeout(resolve, 2_000).unref());
+        const disconnectTimeout = new Promise<void>((resolve) =>
+          setTimeout(resolve, 2_000).unref(),
+        );
         await Promise.race([device.disconnect(), disconnectTimeout]);
       } catch {
         /* already disconnected or never connected */
